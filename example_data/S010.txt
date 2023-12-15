@@ -1,0 +1,33 @@
+#include "iostream"
+#include "vector"
+#include "iomanip"
+#include "math.h"
+#define int long long
+#define ld long double
+
+using namespace std;
+
+int n, m, k;
+
+int dp(int a, int b) {
+	if (a == m && b == n) {
+		return 1;
+	}
+	if (a > m || b > n) {
+		return 0;
+	}
+	int s = 0;
+	for (int i = 0; i <= k; i++) {
+		s += dp(a + i, b + 1);
+	}
+	return s;
+}
+
+signed main() {
+	ios_base::sync_with_stdio(0);
+	cin.tie(0);
+	cout.tie(0);
+	cin >> n >> m >> k;
+	ld c = pow(k + 1, n);
+	cout << fixed << setprecision(6) <<dp(0, 0) / c;
+}
