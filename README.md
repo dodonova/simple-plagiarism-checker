@@ -21,4 +21,4 @@ python plagreport.py -f /путь/к/вашей/папке
      `-t, --types` : типы файлов для проверки (через запятую). По умолчанию: txt,py,cpp,c,js,cs,csv.
 
 Пример:
-     `python plagreport.py -f /путь/к/папке -r custom_report.csv -p 70 -t txt,py`
+     `python plagreport.py -f example_data -r example_report.csv -p 70 -t txt,py,cpp`
