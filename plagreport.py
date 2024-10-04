@@ -42,8 +42,27 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
+compressed_text_cache = {}
+
 
 def get_overlap_percentage(text1, text2):
+    if text1 not in compressed_text_cache:
+        compressed_text_cache[text1] = len(compress(text1.encode('utf-8')))
+    if text2 not in compressed_text_cache:
+        compressed_text_cache[text2] = len(compress(text2.encode('utf-8')))
+
+    compressed_both = compress((text1 + text2).encode('utf-8'))
+    compressed_individual = (compressed_text_cache[text1] +
+                             compressed_text_cache[text2])
+
+    overlap_percentage = (
+        (compressed_individual - len(compressed_both)) /
+        compressed_individual * 2 * 100
+    )
+    return overlap_percentage
+
+
+def get_overlap_percentage_v1(text1, text2):
     compressed_both = compress((text1 + text2).encode('utf-8'))
     compressed_individual = (len(compress(text1.encode('utf-8'))) +
                              len(compress(text2.encode('utf-8'))))
@@ -131,6 +150,7 @@ def check_plagiarism(submissions, min_percentage, report_filename):
     if YANDEX_FORMAT:
         submissions_df = pd.DataFrame(submissions)
         task_count = submissions_df['task_id'].nunique()
+        logging.info('Анализируем данные в формате Яндекс Контест')
         logging.info(f'Количество анализируемых задач: {task_count}')
         for task_id in submissions_df['task_id'].unique():
             task_df = submissions_df[submissions_df['task_id'] == task_id]
@@ -156,7 +176,7 @@ def check_plagiarism(submissions, min_percentage, report_filename):
                             })
 
     else:
-        logging.info("Данные не в формате архива решений Яндекс контест")
+        logging.info('Данные не в формате архива решений Яндекс контест')
         for i in range(len(submissions)):
             for j in range(i + 1, len(submissions)):
                 submission1 = submissions[i]['submission_text']
