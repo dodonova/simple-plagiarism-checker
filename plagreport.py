@@ -11,105 +11,182 @@ Usage:
                           [-t file_types]
 
 Arguments:
-    -f, --folder    : Path to the folder containing text files. Default: current directory (.)
     -r, --report    : Name of the report file. Default: report_[current_datetime].csv
     -p, --min-percent : Minimum overlap percentage for reporting. Default: 60
     -s, --min-size   : Minimum text length for analysis. Default: 140
-    -t, --types     : File types to check (comma-separated). Default: txt,py,cpp,c,js,cs,csv
 
 Example:
     python plagreport.py -f /path/to/your/folder -r custom_report.csv -p 70  -t txt,py
 """
 
-import os
-from zlib import compress
 import argparse
+import os
+import re
+import pandas as pd
+from itertools import combinations
+from zlib import compress
+from tqdm import tqdm
+import logging
+import tempfile
+import zipfile
+import time
 from datetime import datetime
 
-MIN_PERCENTAGE = 60
-DEFAULT_FILE_TYPES = 'txt,py,cpp,c,js,cs,csv'
+MIN_PERCENTAGE = 80
 REPORT_NAME = 'report'
 DEFAULT_MIN_SIZE = 140
 
-min_size = DEFAULT_MIN_SIZE
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
-def overlap_percentage(file1, file2):
-    try:
-        with open(file1, 'r') as f1, open(file2, 'r') as f2:
-            text1 = f1.read().encode()
-            text2 = f2.read().encode()
-    except:
-        return 0
 
-    if len(text1) < min_size or len(text2) < min_size:
-        return 0
-
-    compressed_both = compress((text1 + text2))
-    compressed_individual = compress(text1) + compress(text2)
+def get_overlap_percentage(text1, text2):
+    compressed_both = compress((text1 + text2).encode('utf-8'))
+    compressed_individual = (len(compress(text1.encode('utf-8'))) +
+                             len(compress(text2.encode('utf-8'))))
     overlap_percentage = (
-            (len(compressed_individual) - len(compressed_both)) /
-            len(compressed_individual) * 2 * 100
+        (compressed_individual - len(compressed_both)) /
+        compressed_individual * 2 * 100
     )
     return overlap_percentage
 
-def check_plagiarism(
-        folder_path,
-        report_file=None,
-        min_percentage=MIN_PERCENTAGE,
-        file_types=None
-):
-    if report_file is None:
+
+def get_submissions_df(archive_path, min_size):
+    """
+    Распаковывает архив с посылками из Яндекс Контеста.
+    Создает датафрейм со всеми данными из архива посылок.
+    """
+    with tempfile.TemporaryDirectory() as temp_dir:
+        with zipfile.ZipFile(archive_path, 'r') as zip_ref:
+            zip_ref.extractall(temp_dir)
+
+        file_list = []
+        submissions = []
+        for root, dirs, files in os.walk(temp_dir):
+            for file in files:
+                file_path = os.path.join(root, file)
+                file_size = os.path.getsize(file_path)
+                relative_path = os.path.relpath(file_path, temp_dir)
+                if file_size >= min_size:
+                    file_list.append((relative_path, file_size))
+
+                    match = re.search(r'.+\/(.+)\/(\w+)-(\d+)-', file_path)
+                    if match:
+                        user_id = match.group(1)
+                        task_id = match.group(2)
+                        submission_id = match.group(3)
+                    else:
+                        logging.error((f'Имя файла  не соответствует правилу именования архива решений из Яндекс Контест: {file_path}'))
+                        continue
+
+                    try:
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            submission_text = f.read()
+                    except Exception as e:
+                        logging.error(f"Ошибка {e} при чтении файла \n{file_path}")
+
+                        submission_text = ''
+
+                    submissions.append({
+                        'filename': relative_path,
+                        'user_id': user_id,
+                        'task_id': task_id,
+                        'submission_id': submission_id,
+                        'submission_text': submission_text
+                    })
+
+        return pd.DataFrame(submissions)
+
+
+def check_plagiarism(submissions_df, min_percentage, report_filename):
+    """
+    Проверяет все посылки в датафрейме на списывание и создает отчет.
+    """
+
+    submissions_df.to_csv('all_submissions.csv', index=False)
+
+    task_count = submissions_df['task_id'].nunique()
+    logging.info(f'Количество анализируемых задач: {task_count}')
+
+    report = []
+
+    for task_id in submissions_df['task_id'].unique():
+        task_df = submissions_df[submissions_df['task_id'] == task_id]
+        user_combinations = list(combinations(task_df['user_id'].unique(), 2))
+
+        for user1, user2 in tqdm(
+            user_combinations,
+            desc=f"Задача {task_id}. Обработка файлов",
+            leave=True
+        ):
+            user1_records = task_df[task_df['user_id'] == user1]
+            user2_records = task_df[task_df['user_id'] == user2]
+            
+            for _, record1 in user1_records.iterrows():
+                for _, record2 in user2_records.iterrows():
+                    # logging.info(f'Сравниваем {record1['submission_id']} и {record2['submission_id']}')
+                    overlap_percentage = get_overlap_percentage(
+                        record1['submission_text'], record2['submission_text']
+                    )
+                    # logging.info(f'Процент совпадения: {overlap_percentage}\n')
+                    if overlap_percentage > min_percentage:
+                        report.append({
+                            'task_id': record1['task_id'],
+                            'user_id_1': record1['user_id'],
+                            'user_id_2': record2['user_id'],
+                            'filename_1': record1['filename'],
+                            'filename_2': record2['filename'],
+                            'overlap_percentage': overlap_percentage
+                        })
+
+    if report_filename is None:
+        folder_path = os.path.join(os.getcwd(), 'reports')
+        os.makedirs(folder_path, exist_ok=True)
         current_datetime = datetime.now().strftime("%Y%m%d_%H%M%S")
-        report_file = f"{REPORT_NAME}_{current_datetime}.csv"
+        report_filename = f"{folder_path}/{REPORT_NAME}_{current_datetime}.csv"
 
-    if file_types is None:
-        files = [f for f in os.listdir(folder_path)]
-    else:
-        files = [
-            f for f in os.listdir(folder_path)
-            if f.endswith(tuple(file_types))
-        ]
+    submissions_df = pd.DataFrame(report)
+    submissions_df.to_csv(report_filename, index=False)
+    return report_filename
 
-    with open(report_file, 'w') as report:
-        report.write("File1;File2;Overlap Percentage\n")
 
-        for i in range(len(files)):
-            for j in range(i + 1, len(files)):
-                file1 = os.path.join(folder_path, files[i])
-                file2 = os.path.join(folder_path, files[j])
+def main(archive_filename, min_size, min_percentage, report_filename):
+    submissions = get_submissions_df(archive_filename, min_size)
+    report = check_plagiarism(submissions, min_percentage, report_filename)
+    print(f"Был создан отчет: {report}")
 
-                percentage = overlap_percentage(file1, file2)
-
-                if percentage >= min_percentage:
-                    report.write(f"{files[i]};{files[j]};{percentage:.2f}\n")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description='check plagiarism in text files.')
-    parser.add_argument(
-        '-f', '--folder', type=str, default='.',
-        help='Path to the folder containing text files')
-    parser.add_argument(
-        '-r', '--report', type=str, default=None,
-        help='name of the report file')
-    parser.add_argument(
-        '-p', '--min-percent', type=float, default=MIN_PERCENTAGE,
-        help=(f'minimum overlap percentage for reporting. '
-              f'Default: {MIN_PERCENTAGE}'))
-    parser.add_argument(
-        '-s', '--min-size', type=float, default=MIN_PERCENTAGE,
-        help=f'minimum text length for analyzing. Default: {DEFAULT_MIN_SIZE}')
-    parser.add_argument(
-        '-t', '--types', type=str, default=None,
-        help=f'file types to check (comma-separated)')
+        description="Проверяет посылки из Яндекс Контеста на списывание.")
 
+    parser.add_argument('archive',
+                        help="Путь к архиву для обработки")
+
+    parser.add_argument('-p', '--min_percent',
+                        type=float,
+                        default=MIN_PERCENTAGE,
+                        help=(f'Минимальный процент совпадения. '
+                              f'По умолчанию: {MIN_PERCENTAGE}'))
+    parser.add_argument('-s', '--min_size',
+                        type=int,
+                        default=100,
+                        help=(f'Минимальный размер файла в байтах. '
+                              f'По умолчанию: {DEFAULT_MIN_SIZE}'))
+    parser.add_argument('-r', '--report_name',
+                        type=str,
+                        default=None,
+                        help="Имя файла отчета")
+    parser.add_argument('--no',
+                        action='store_false',
+                        dest='yandex_format',
+                        help='Указать если данные не в формате Яндекс Контест')
     args = parser.parse_args()
 
-    folder_path = args.folder
-    report_file = args.report
-    min_percentage = args.min_percent
-    min_size = args.min_size
-    file_types = None if args.types is None else args.types.split(',')
+    yandex_format = args.yandex_format if hasattr(args, 'yandex_format') else True
 
-    check_plagiarism(folder_path, report_file, min_percentage, file_types)
-    print('Report successfully done.')
+    main(args.archive, args.min_size, args.min_percent, args.report_name)
+
+    logging.info('Отчет успешно создан')
