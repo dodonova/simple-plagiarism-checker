@@ -1,1 +1,652 @@
+filename,submission_text
+example_data/S014.py,"n, k = list(map(int, input().split()))
+b = list(map(int, input().split()))
+c = list(map(int, input().split()))
+res = []
+for i in range(n):
+    res.append(b[i] / c[i])
+save = res.copy()
+ans = []
+for i in range(k+1):
+    a = min(res)
+    if i != 0:
+        ans.append(res.index(a) + 1)
+    res[res.index(a)] = 99999
+print(*ans)"
+example_data/S018.py,"# put your python code here
+str = input().split(' ')
+n = int(str[0])
+k = int(str[1])
+powers = [int(i) for i in input().split(' ') if i != '']
+prices = [int(i) for i in input().split(' ') if i != '']
+ratio = [powers[i]/prices[i] for i in range(n)]
+max_ratios = sorted(range(len(ratio)), key=lambda index: ratio[index])[-k:]
+max_ratios = sorted(max_ratios)
+for i in range(0, len(max_ratios)):
+    max_ratios[i] += 1
+print(*max_ratios)"
+example_data/S005.py,"n = int(input().split()[1])
+track = '_' + '_'.join(input().split()) + '_'
+s = 0
+for _ in range(n):
+    frag = '_' + '_'.join(input().split()[1:]) + '_'
+    s += track.count(frag)**2
+print(s)"
+example_data/S008.py,"# put your python code here
+n, m = map(int, input().split())
+b = input()
+k = 0
+for i in range(m):
+    a = input()
+    a = a[2:]
+    k += b.count(a) ** 2
+print(k)"
+example_data/S024.py,"def move_from(x, y):
+    for ax, ay in [(1, 0), (0, 1), (-1, 0), (0, -1)]:
+        nx, ny = x + ax, y + ay
+        if nx < 0 or ny < 0 or nx >= m or ny >= n:
+            continue
+        if area[ny][nx] is None:
+            continue
+        if any(area[ny][nx]):
+            continue
+        area[ny][nx] = [x, y]
+        move_from(nx, ny)
 
+
+n, m = map(int, input().split())
+area = [[[] for _ in range(m)] for _ in range(n)]
+start = (0, 0)
+end = (0, 0)
+for y in range(n):
+    inp = input()
+    for x, elem in enumerate(inp):
+        if elem == '#':
+            area[y][x] = None
+        if elem == 'S':
+            start = (x, y)
+        elif elem == 'F':
+            end = (x, y)
+area[end[1]][end[0]] = [1]
+move_from(*end)
+cmds = []
+x, y = start
+napr = 0
+while area[y][x] != 1:
+    nx, ny = area[y][x]
+    ax, ay = nx - x, ny - y
+    need_napr = 0 if ay == 1 else 1 if ax == -1 else 2 if ay == -1 else 3
+    #if napr != need_napr:
+    #    
+print(cmds)"
+example_data/S013.py,"N, M = map(int, input().split())
+music = input()
+res = 0
+for i in range(M):
+    frag = input()
+    frag = frag[frag.find(' ')+1:]
+    #print(frag)
+    res += music.count(frag)**2
+print(res)"
+example_data/S012.py,"N, K = map(int, input().split())
+B = map(int, input().split())
+C = map(int, input().split())
+zp = list(zip(B, C))
+zpc = zp.copy()
+ans = []
+for i in range(K):
+    ind = zp.index(max(zp, key=lambda x: x[0] / x[1]))
+    # del zpl[zpl.index(ind)]
+    ans.append(zp[ind])
+    del zp[ind]
+print(*sorted((map(lambda x: zpc.index(x)+1, ans))))"
+example_data/S002.py,"print(""MOVE LEFT"")
+print(""GO"")
+print(""GO"")
+print(""GO"")
+print(""MOVE RIGHT"")
+print(""GO"")
+print(""GO"")
+print(""MOVE RIGHT"")
+print(""GO"")
+print(""FINISH"")"
+example_data/S015.py,"# put your python code here
+n = int(input())
+k = int(input())
+for i in range(n):
+    if n < 100000 & n > 1=:
+        print(siuuu)"
+example_data/S027.py,"#include<bits/stdc++.h>
+#include <ext/pb_ds/assoc_container.hpp>
+
+#define sz(a) (int)a.size()
+#define pb push_back
+#define all(a) a.begin(), a.end()
+#define for0(i, n) for(int i = 0; i < n; i++)
+#define for1(i, n) for(int i = 1; i <= n; i++)
+#define x first
+#define y second
+#define int long long
+
+using namespace std;
+using namespace __gnu_pbds;
+
+typedef long long ll;
+typedef pair<int, int> pii;
+typedef vector<int> vi;
+typedef vector<vector<int> > vvi;
+typedef tree<pii, null_type, less<pii>, rb_tree_tag, tree_order_statistics_node_update> ordered_set;
+typedef map<string, int> msi;
+
+const int inf = 1e18;
+const int M = 1e9 + 7;
+
+int n, m;
+int dx[4] = {-1, 0, 1, 0};
+int dy[4] = {0, 1, 0, -1};
+
+bool inside(int x, int y){
+    return (x >= 0 && y >= 0 && x < n && y < m);
+}
+
+signed main(){
+    //ifstream cin(""input.txt"");
+    //ofstream cout(""output.txt"");
+       ios::sync_with_stdio(0), cin.tie(0), cout.tie(0);
+
+
+    cin >> n >> m;
+    vector<string> S(n);
+    for0(i, n){
+        cin >> S[i];
+    }
+    pii st, fin;
+    for0(i, n)
+        for0(j, m){
+            if(S[i][j] == 'S'){
+                st = {i, j};
+                S[i][j] = '.';
+            }
+            if(S[i][j] == 'F'){
+                fin = {i, j};
+                S[i][j] = '.';
+            }
+        }
+
+    deque<pii> que;
+    vvi rev_dir(n, vi(m, -1));
+    que.pb(st);
+    rev_dir[st.x][st.y] = 4;
+    while(sz(que) > 0){
+        pii top = que[0];
+        que.pop_front();
+
+        for0(i, 4){
+            int nx = top.x + dx[i];
+            int ny = top.y + dy[i];
+
+            if(inside(nx, ny) && S[nx][ny] == '.' && rev_dir[nx][ny] == -1){
+               rev_dir[nx][ny] = (i + 2) % 4;
+               que.pb({nx, ny});
+            }
+        }
+    }
+
+    pii t = fin;
+    vvi dir(n, vi(m, -1));
+    while(t != st){
+        pii nt = {t.x + dx[rev_dir[t.x][t.y]], t.y + dy[rev_dir[t.x][t.y]]};
+        dir[nt.x][nt.y] = (rev_dir[t.x][t.y] + 2) % 4;
+        t = nt;
+    }
+
+   int tdir = 2;
+   t = st;
+   while(dir[t.x][t.y] > -1){
+        while(tdir != dir[t.x][t.y]){
+            cout << ""MOVE RIGHT\n"";
+            (tdir += 1) %= 4;
+        }
+        cout << ""GO\n"";
+        t = {t.x + dx[dir[t.x][t.y]], t.y + dy[dir[t.x][t.y]]};
+   }
+   cout << ""FINISH\n"";
+
+}"
+example_data/S016.py,"n, m, k = map(int, input().split())
+vector = [i for i in range(0, k + 1)]
+cnt = (k + 1) ** n
+cnt_sum = 0
+num = 0
+lst_vector = []
+
+while len(str(num)) <= n:
+    lst = [int(i) for i in list(str(num))]
+    if max(lst) <= k:
+        if sum(lst) == m:
+            cnt_sum += 1
+    num += 1
+
+print(round(cnt_sum / cnt, 6))"
+example_data/S006.py,"# put your python code here
+
+from math import sqrt
+N, M = map(int, input().split())
+s = []
+for i in range(N):
+    s.append(list(map(int, input().split())))
+
+ans = 0
+for i in range(N*M):
+    x1 = i//M
+    y1 = i%M
+    c = s[x1][y1]
+    if 1:
+        for j in range(i+1, N*M):
+            x2 = j//M
+            y2 = j%M
+            if s[x2][y2]==c:
+                for k in range(j+1, N*M):
+                    x3 = k//M
+                    y3 = k%M
+                    if s[x3][y3]==c:
+                        a1 = (x1 - x2)**2 + (y1-y2)**2
+                        a2 = (x2 - x3)**2 + (y2-y3)**2
+                        a3 = (x1 - x3)**2 + (y1-y3)**2
+                        if (-1 < (a1 + a2 - a3)/(2*sqrt(a1*a2)) < 0) or (-1 < (a1 + a3 - a2)/(2*sqrt(a1*a3)) < 0) or (-1 < (a3 + a2 - a1)/(2*sqrt(a2*a3)) < 0):
+                            ans+=1
+print(ans)"
+example_data/S026.py,"#include<bits/stdc++.h>
+#include <ext/pb_ds/assoc_container.hpp>
+
+#define sz(a) (int)a.size()
+#define pb push_back
+#define all(a) a.begin(), a.end()
+#define for0(i, n) for(int i = 0; i < n; i++)
+#define for1(i, n) for(int i = 1; i <= n; i++)
+#define x first
+#define y second
+#define int long long
+
+using namespace std;
+using namespace __gnu_pbds;
+
+typedef long long ll;
+typedef pair<int, int> pii;
+typedef vector<int> vi;
+typedef vector<vector<int> > vvi;
+typedef tree<pii, null_type, less<pii>, rb_tree_tag, tree_order_statistics_node_update> ordered_set;
+typedef map<string, int> msi;
+
+const int inf = 1e18;
+const int M = 1e9 + 7;
+
+int n, m;
+int dx[4] = {-1, 0, 1, 0};
+int dy[4] = {0, 1, 0, -1};
+
+bool inside(int x, int y){
+    return (x >= 0 && y >= 0 && x < n && y < m);
+}
+
+signed main(){
+    //ifstream cin(""input.txt"");
+    //ofstream cout(""output.txt"");
+       ios::sync_with_stdio(0), cin.tie(0), cout.tie(0);
+
+
+    cin >> n >> m;
+    vector<string> S(n);
+    for0(i, n){
+        cin >> S[i];
+    }
+    pii st, fin;
+    for0(i, n)
+        for0(j, m){
+            if(S[i][j] == 'S'){
+                st = {i, j};
+                S[i][j] = '.';
+            }
+            if(S[i][j] == 'F'){
+                fin = {i, j};
+                S[i][j] = '.';
+            }
+        }
+
+    deque<pii> que;
+    vvi rev_dir(n, vi(m, -1));
+    que.pb(st);
+    rev_dir[st.x][st.y] = 4;
+    while(sz(que) > 0){
+        pii top = que[0];
+        que.pop_front();
+
+        for0(i, 4){
+            int nx = top.x + dx[i];
+            int ny = top.y + dy[i];
+
+            if(inside(nx, ny) && S[nx][ny] == '.' && rev_dir[nx][ny] == -1){
+               rev_dir[nx][ny] = (i + 2) % 4;
+               que.pb({nx, ny});
+            }
+        }
+    }
+
+    pii t = fin;
+    vvi dir(n, vi(m, -1));
+    while(t != st){
+        pii nt = {t.x + dx[rev_dir[t.x][t.y]], t.y + dy[rev_dir[t.x][t.y]]};
+        dir[nt.x][nt.y] = (rev_dir[t.x][t.y] + 2) % 4;
+        t = nt;
+    }
+
+   int tdir = 2;
+   t = st;
+   while(dir[t.x][t.y] > -1){
+        while(tdir != dir[t.x][t.y]){
+            cout << ""MOVE RIGHT\n"";
+            (tdir += 1) %= 4;
+        }
+        cout << ""GO\n"";
+        t = {t.x + dx[dir[t.x][t.y]], t.y + dy[dir[t.x][t.y]]};
+   }
+   cout << ""FINISH\n"";
+
+}"
+example_data/S021.py,"import itertools as it
+l = list(map(int, input().split()))
+val = """".join(list(map(str, [x for x in range(0, l[2] + 1)])))
+arr = [x for x in it.product(val, repeat=l[0])]
+good_arr = [x for x in arr if sum(list(map(int, x))) == l[1]]
+rounded = str(round((len(good_arr) * (1 / len(arr))), 6))
+print(rounded+""0""*(8-len(rounded)))"
+example_data/S017.py,"n, m = map(int, input().split())
+B = [int(i) for i in input().split()]
+cnt = 0
+for i in range(m):
+    a = [int(i) for i in input().split()]
+    dlina = a[0]
+    a.pop(0)
+    for i in range(len(B) - dlina + 1):
+        if B[i: i + dlina] == a:
+            cnt += 1
+            break
+
+print(cnt)"
+example_data/S022.py,"# put your python code here
+n, m = map(int, input().split())
+
+tr = input()
+count = 0
+for i in range(m):
+    s = input()[2:-1]
+    if s in tr:
+        count += 1
+print(count)"
+example_data/S020.py,"import copy
+inp = input().split()
+
+a = int(inp[0])
+b = int(inp[1])
+
+m = list(map(int, input().split()))
+c = list(map(int, input().split()))
+
+res = [m[i]/c[i] for i in range(len(m))]
+copRes = copy.copy(res)
+
+ans = ''
+
+for i in range(b):
+    mx = max(res)
+    ind = copRes.index(mx)
+    ans = str(ind+1)+ ' ' + ans
+    copRes[ind] = 1000000000
+    ind2 = res.index(mx)
+    res = res[:ind2]+res[ind2+1:]
+
+print(' '.join(list(map(str,sorted(list(map(int, ans[:-1].split(' '))))))))"
+example_data/S001.txt,"#include<bits/stdc++.h>
+#include <ext/pb_ds/assoc_container.hpp>
+
+#define sz(a) (int)a.size()
+#define pb push_back
+#define all(a) a.begin(), a.end()
+#define for0(i, n) for(int i = 0; i < n; i++)
+#define for1(i, n) for(int i = 1; i <= n; i++)
+#define x first
+#define y second
+#define int long long
+
+using namespace std;
+using namespace __gnu_pbds;
+
+typedef long long ll;
+typedef pair<int, int> pii;
+typedef vector<int> vi;
+typedef vector<vector<int> > vvi;
+typedef tree<pii, null_type, less<pii>, rb_tree_tag, tree_order_statistics_node_update> ordered_set;
+typedef map<string, int> msi;
+
+const int inf = 1e18;
+const int M = 1e9 + 7;
+
+int n, m;
+int dx[4] = {-1, 0, 1, 0};
+int dy[4] = {0, 1, 0, -1};
+
+bool inside(int x, int y){
+    return (x >= 0 && y >= 0 && x < n && y < m);
+}
+
+signed main(){
+    //ifstream cin(""input.txt"");
+    //ofstream cout(""output.txt"");
+       ios::sync_with_stdio(0), cin.tie(0), cout.tie(0);
+
+
+    cin >> n >> m;
+    vector<string> S(n);
+    for0(i, n){
+        cin >> S[i];
+    }
+    pii st, fin;
+    for0(i, n)
+        for0(j, m){
+            if(S[i][j] == 'S'){
+                st = {i, j};
+                S[i][j] = '.';
+            }
+            if(S[i][j] == 'F'){
+                fin = {i, j};
+                S[i][j] = '.';
+            }
+        }
+
+    deque<pii> que;
+    vvi rev_dir(n, vi(m, -1));
+    que.pb(st);
+    rev_dir[st.x][st.y] = 4;
+    while(sz(que) > 0){
+        pii top = que[0];
+        que.pop_front();
+
+        for0(i, 4){
+            int nx = top.x + dx[i];
+            int ny = top.y + dy[i];
+
+            if(inside(nx, ny) && S[nx][ny] == '.' && rev_dir[nx][ny] == -1){
+               rev_dir[nx][ny] = (i + 2) % 4;
+               que.pb({nx, ny});
+            }
+        }
+    }
+
+    pii t = fin;
+    vvi dir(n, vi(m, -1));
+    while(t != st){
+        pii nt = {t.x + dx[rev_dir[t.x][t.y]], t.y + dy[rev_dir[t.x][t.y]]};
+        dir[nt.x][nt.y] = (rev_dir[t.x][t.y] + 2) % 4;
+        t = nt;
+    }
+
+   int tdir = 2;
+   t = st;
+   while(dir[t.x][t.y] > -1){
+        while(tdir != dir[t.x][t.y]){
+            cout << ""MOVE RIGHT\n"";
+            (tdir += 1) %= 4;
+        }
+        cout << ""GO\n"";
+        t = {t.x + dx[dir[t.x][t.y]], t.y + dy[dir[t.x][t.y]]};
+   }
+   cout << ""FINISH\n"";
+
+}"
+example_data/S007.cpp,"#include <bits/stdc++.h>
+
+using namespace std;
+#define int long long
+bool sorter(pair<int,float> f, pair<int, float> s) {
+    if (f.second>s.second) return true;
+    else return false;
+}
+int32_t main()
+{
+    int n, k;
+    cin >> n >> k;
+    vector <float> b;
+    for (int i =0; i < n; i++) {
+        float tmp;
+        cin >> tmp;
+        b.push_back(tmp);
+    }
+    vector <float> c;
+    for (int i = 0; i < n; i++) {
+        float tmp;
+        cin >> tmp;
+        c.push_back(tmp);
+    }
+    vector <pair<int, float>> fsort;
+    for (int i = 0 ; i < n; i++) {
+        fsort.push_back({i, b[i]/c[i]});
+    }
+    sort(fsort.begin(), fsort.end(), sorter);
+    set <int> ans;
+    for (int i = 0; i < k; i++) {
+        ans.insert(fsort[i].first+1);
+    }
+    for (auto el: ans) {
+        cout << el << ' ';
+    }
+}"
+example_data/S003.py,"N, M = map(int, input().split())
+melody =  input().split()
+res = 0
+for i in range(M):
+    bit = input().split()[1:]
+    if bit[0] not in melody:
+        continue
+    counter = 0
+    bitlen = len(bit)
+    for i in range(len(melody)-bitlen):
+        if melody[i:i+bitlen] == bit:
+            counter+=1
+    res+= counter**2
+print(res)"
+example_data/S010.txt,"#include ""iostream""
+#include ""vector""
+#include ""iomanip""
+#include ""math.h""
+#define int long long
+#define ld long double
+
+using namespace std;
+
+int n, m, k;
+
+int dp(int a, int b) {
+	if (a == m && b == n) {
+		return 1;
+	}
+	if (a > m || b > n) {
+		return 0;
+	}
+	int s = 0;
+	for (int i = 0; i <= k; i++) {
+		s += dp(a + i, b + 1);
+	}
+	return s;
+}
+
+signed main() {
+	ios_base::sync_with_stdio(0);
+	cin.tie(0);
+	cout.tie(0);
+	cin >> n >> m >> k;
+	ld c = pow(k + 1, n);
+	cout << fixed << setprecision(6) <<dp(0, 0) / c;
+}"
+example_data/S023.py,"N, K = map(int, input().split())
+B = list(map(int, input().split()))
+C = list(map(int, input().split()))
+l = []
+for i in range(N):
+    l.append((i, B[i]/C[i]))
+l.sort(key=lambda x: x[1], reverse=True)
+out = []
+for i in range(K):
+    out.append(l[i][0] + 1)
+out.sort()
+print(*out)"
+example_data/S025.py,"# put your python code here
+
+
+n, m = map(int, input().split())
+matrix = [list(map(int, input().split())) for _ in range(n)]
+
+print(1)"
+example_data/S009.py,"import itertools
+n, m = map(int, input().split())
+pixels = []
+colors = {}
+for i in range(n):
+    pixels_sub = []
+    for j, c in enumerate(list(map(int, input().split()))):
+        if c in colors.keys():
+            colors[c].append((i, j))
+        else:
+            colors[c] = [(i, j)]
+        pixels_sub.append(c)
+    pixels.append(pixels_sub)
+count = 0
+for c in colors.keys():
+    for el in itertools.combinations(colors[c], r=3):
+        f, s, t = el
+        f_s = (f[0] - s[0]) ** 2 + (f[1] - s[1]) ** 2
+        s_s = (f[0] - t[0]) ** 2 + (f[1] - t[1]) ** 2
+        t_s = (t[0] - s[0]) ** 2 + (t[1] - s[1]) ** 2
+        try:
+            k = (s[1] - f[1]) / (s[0]-f[0])
+            b = f[1] - k*f[0]
+            if (f_s + s_s < t_s or f_s + t_s < s_s or s_s + t_s < f_s) and t[1] != (k * t[0] + b):
+                count += 1
+        except ZeroDivisionError:
+            if (f_s + s_s < t_s or f_s + t_s < s_s or s_s + t_s < f_s) and t[0] != f[0]:
+                count += 1
+
+print(count)"
+example_data/S019.py,"# put your python code here
+n, m = map(int, input().split())
+b = input()
+polz = []
+for i in range(m):
+    s = input()
+    if s not in polz:
+        polz.append(s)
+sum = 0
+for i in range(m):
+    s = b.count(polz[i][2:-1])
+    if s != 0:
+        sum += s**2
+print(sum)"

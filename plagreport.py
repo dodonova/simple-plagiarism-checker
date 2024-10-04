@@ -35,6 +35,7 @@ from datetime import datetime
 MIN_PERCENTAGE = 80
 REPORT_NAME = 'report'
 DEFAULT_MIN_SIZE = 140
+YANDEX_FORMAT = False
 
 logging.basicConfig(
     level=logging.INFO,
@@ -53,10 +54,10 @@ def get_overlap_percentage(text1, text2):
     return overlap_percentage
 
 
-def get_submissions_df(archive_path, min_size):
+def get_submissions(archive_path, min_size):
     """
     Распаковывает архив с посылками из Яндекс Контеста.
-    Создает датафрейм со всеми данными из архива посылок.
+    Создает JSON  со всеми данными из архива посылок.
     """
     with tempfile.TemporaryDirectory() as temp_dir:
         with zipfile.ZipFile(archive_path, 'r') as zip_ref:
@@ -72,14 +73,15 @@ def get_submissions_df(archive_path, min_size):
                 if file_size >= min_size:
                     file_list.append((relative_path, file_size))
 
-                    match = re.search(r'.+\/(.+)\/(\w+)-(\d+)-', file_path)
-                    if match:
-                        user_id = match.group(1)
-                        task_id = match.group(2)
-                        submission_id = match.group(3)
-                    else:
-                        logging.error((f'Имя файла  не соответствует правилу именования архива решений из Яндекс Контест: {file_path}'))
-                        continue
+                    if YANDEX_FORMAT:
+                        match = re.search(r'.+\/(.+)\/(\w+)-(\d+)-', file_path)
+                        if match:
+                            user_id = match.group(1)
+                            task_id = match.group(2)
+                            submission_id = match.group(3)
+                        else:
+                            logging.error((f'Имя файла  не соответствует правилу именования архива решений из Яндекс Контест: {file_path}'))
+                            continue
 
                     try:
                         with open(file_path, 'r', encoding='utf-8') as f:
@@ -89,71 +91,91 @@ def get_submissions_df(archive_path, min_size):
 
                         submission_text = ''
 
-                    submissions.append({
-                        'filename': relative_path,
-                        'user_id': user_id,
-                        'task_id': task_id,
-                        'submission_id': submission_id,
-                        'submission_text': submission_text
-                    })
-
-        return pd.DataFrame(submissions)
-
-
-def check_plagiarism(submissions_df, min_percentage, report_filename):
-    """
-    Проверяет все посылки в датафрейме на списывание и создает отчет.
-    """
-
-    submissions_df.to_csv('all_submissions.csv', index=False)
-
-    task_count = submissions_df['task_id'].nunique()
-    logging.info(f'Количество анализируемых задач: {task_count}')
-
-    report = []
-
-    for task_id in submissions_df['task_id'].unique():
-        task_df = submissions_df[submissions_df['task_id'] == task_id]
-        user_combinations = list(combinations(task_df['user_id'].unique(), 2))
-
-        for user1, user2 in tqdm(
-            user_combinations,
-            desc=f"Задача {task_id}. Обработка файлов",
-            leave=True
-        ):
-            user1_records = task_df[task_df['user_id'] == user1]
-            user2_records = task_df[task_df['user_id'] == user2]
-            
-            for _, record1 in user1_records.iterrows():
-                for _, record2 in user2_records.iterrows():
-                    # logging.info(f'Сравниваем {record1['submission_id']} и {record2['submission_id']}')
-                    overlap_percentage = get_overlap_percentage(
-                        record1['submission_text'], record2['submission_text']
-                    )
-                    # logging.info(f'Процент совпадения: {overlap_percentage}\n')
-                    if overlap_percentage > min_percentage:
-                        report.append({
-                            'task_id': record1['task_id'],
-                            'user_id_1': record1['user_id'],
-                            'user_id_2': record2['user_id'],
-                            'filename_1': record1['filename'],
-                            'filename_2': record2['filename'],
-                            'overlap_percentage': overlap_percentage
+                    if YANDEX_FORMAT:
+                        submissions.append({
+                            'filename': relative_path,
+                            'user_id': user_id,
+                            'task_id': task_id,
+                            'submission_id': submission_id,
+                            'submission_text': submission_text
+                        })
+                    else:
+                        submissions.append({
+                            'filename': relative_path,
+                            'submission_text': submission_text
                         })
 
+        return submissions
+
+
+def create_report(report_filename, report_data):
     if report_filename is None:
         folder_path = os.path.join(os.getcwd(), 'reports')
         os.makedirs(folder_path, exist_ok=True)
         current_datetime = datetime.now().strftime("%Y%m%d_%H%M%S")
         report_filename = f"{folder_path}/{REPORT_NAME}_{current_datetime}.csv"
 
-    submissions_df = pd.DataFrame(report)
-    submissions_df.to_csv(report_filename, index=False)
+    report_df = pd.DataFrame(report_data)
+    report_df.to_csv(report_filename, index=False)
     return report_filename
 
 
+def check_plagiarism(submissions, min_percentage, report_filename):
+    """
+    Проверяет все посылки в списке submissions на списывание и создает отчет.
+    """
+
+    # submissions_df.to_csv('all_submissions.csv', index=False)
+    report = []
+
+    if YANDEX_FORMAT:
+        submissions_df = pd.DataFrame(submissions)
+        task_count = submissions_df['task_id'].nunique()
+        logging.info(f'Количество анализируемых задач: {task_count}')
+        for task_id in submissions_df['task_id'].unique():
+            task_df = submissions_df[submissions_df['task_id'] == task_id]
+
+            task_list = task_df.to_dict(orient='records')
+            for i in tqdm(range(len(task_list)),
+                          desc=f"Задача {task_id}. Обработка файлов",
+                          leave=True):
+                for j in range(i+1, len(task_list)):
+                    if task_list[i]['user_id'] != task_list[j]['user_id']:
+                        overlap_percentage = get_overlap_percentage(
+                            task_list[i]['submission_text'],
+                            task_list[j]['submission_text']
+                        )
+                        if overlap_percentage > min_percentage:
+                            report.append({
+                                'task_id': task_list[i]['task_id'],
+                                'user_id_1': task_list[i]['user_id'],
+                                'user_id_2': task_list[j]['user_id'],
+                                'filename_1': task_list[i]['filename'],
+                                'filename_2': task_list[j]['filename'],
+                                'overlap_percentage': overlap_percentage
+                            })
+
+    else:
+        logging.info("Данные не в формате архива решений Яндекс контест")
+        for i in range(len(submissions)):
+            for j in range(i + 1, len(submissions)):
+                submission1 = submissions[i]['submission_text']
+                submission2 = submissions[j]['submission_text']
+                overlap_percentage = get_overlap_percentage(
+                    submission1, submission2
+                )
+                if overlap_percentage > min_percentage:
+                    report.append({
+                        'filename_1': submissions[i]['filename'],
+                        'filename_2': submissions[j]['filename'],
+                        'overlap_percentage': overlap_percentage
+                    })
+
+    return create_report(report_filename, report)
+
+
 def main(archive_filename, min_size, min_percentage, report_filename):
-    submissions = get_submissions_df(archive_filename, min_size)
+    submissions = get_submissions(archive_filename, min_size)
     report = check_plagiarism(submissions, min_percentage, report_filename)
     print(f"Был создан отчет: {report}")
 
@@ -179,13 +201,14 @@ if __name__ == "__main__":
                         type=str,
                         default=None,
                         help="Имя файла отчета")
-    parser.add_argument('--no',
-                        action='store_false',
+    parser.add_argument('-y', '--yandex',
+                        action='store_true',
                         dest='yandex_format',
                         help='Указать если данные не в формате Яндекс Контест')
     args = parser.parse_args()
 
-    yandex_format = args.yandex_format if hasattr(args, 'yandex_format') else True
+    if hasattr(args, 'yandex_format'):
+        YANDEX_FORMAT = args.yandex_format
 
     main(args.archive, args.min_size, args.min_percent, args.report_name)
 
