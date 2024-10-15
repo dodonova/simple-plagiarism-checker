@@ -31,6 +31,8 @@ import tempfile
 import zipfile
 import time
 from datetime import datetime
+import concurrent.futures
+
 
 MIN_PERCENTAGE = 80
 REPORT_NAME = 'report'
@@ -141,39 +143,66 @@ def create_report(report_filename, report_data):
 
 def check_plagiarism(submissions, min_percentage, report_filename):
     """
-    Проверяет все посылки в списке submissions на списывание и создает отчет.
+    Проверяет все посылки в списке submissions на списывание и создает список для отчета.
     """
 
     # submissions_df.to_csv('all_submissions.csv', index=False)
     report = []
+
 
     if YANDEX_FORMAT:
         submissions_df = pd.DataFrame(submissions)
         task_count = submissions_df['task_id'].nunique()
         logging.info('Анализируем данные в формате Яндекс Контест')
         logging.info(f'Количество анализируемых задач: {task_count}')
+
+        def process_pair(task_list, i, j):
+            if task_list[i]['user_id'] != task_list[j]['user_id']:
+                overlap_percentage = get_overlap_percentage(
+                    task_list[i]['submission_text'],
+                    task_list[j]['submission_text']
+                )
+                if overlap_percentage > min_percentage:
+                    return {
+                        'task_id': task_list[i]['task_id'],
+                        'user_id_1': task_list[i]['user_id'],
+                        'user_id_2': task_list[j]['user_id'],
+                        'filename_1': task_list[i]['filename'],
+                        'filename_2': task_list[j]['filename'],
+                        'overlap_percentage': overlap_percentage
+                    }
+            return None
+
         for task_id in submissions_df['task_id'].unique():
             task_df = submissions_df[submissions_df['task_id'] == task_id]
-
             task_list = task_df.to_dict(orient='records')
-            for i in tqdm(range(len(task_list)),
-                          desc=f"Задача {task_id}. Обработка файлов",
-                          leave=True):
-                for j in range(i+1, len(task_list)):
-                    if task_list[i]['user_id'] != task_list[j]['user_id']:
-                        overlap_percentage = get_overlap_percentage(
-                            task_list[i]['submission_text'],
-                            task_list[j]['submission_text']
-                        )
-                        if overlap_percentage > min_percentage:
-                            report.append({
-                                'task_id': task_list[i]['task_id'],
-                                'user_id_1': task_list[i]['user_id'],
-                                'user_id_2': task_list[j]['user_id'],
-                                'filename_1': task_list[i]['filename'],
-                                'filename_2': task_list[j]['filename'],
-                                'overlap_percentage': overlap_percentage
-                            })
+
+            pairs = [(task_list, i, j) for i in range(len(task_list)) for j in range(i + 1, len(task_list))]
+
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                results = list(tqdm(executor.map(lambda p: process_pair(*p), pairs),
+                                    desc=f"Задача {task_id}. Обработка файлов",
+                                    leave=True))
+                report.extend([result for result in results if result])
+            
+            # for i in tqdm(range(len(task_list)),
+            #               desc=f"Задача {task_id}. Обработка файлов",
+            #               leave=True):
+            #     for j in range(i+1, len(task_list)):
+            #         if task_list[i]['user_id'] != task_list[j]['user_id']:
+            #             overlap_percentage = get_overlap_percentage(
+            #                 task_list[i]['submission_text'],
+            #                 task_list[j]['submission_text']
+            #             )
+            #             if overlap_percentage > min_percentage:
+            #                 report.append({
+            #                     'task_id': task_list[i]['task_id'],
+            #                     'user_id_1': task_list[i]['user_id'],
+            #                     'user_id_2': task_list[j]['user_id'],
+            #                     'filename_1': task_list[i]['filename'],
+            #                     'filename_2': task_list[j]['filename'],
+            #                     'overlap_percentage': overlap_percentage
+            #                 })
 
     else:
         logging.info('Данные не в формате архива решений Яндекс контест')
