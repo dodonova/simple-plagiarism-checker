@@ -1,40 +1,39 @@
 """
-Plagiarism Checker
+Скрипт для проверки решений на плагиат
 
-This script checks overlap in the text files within a specified folder.
+Скрипт проверяет файлы с решениями из указанного архива на процент совпадения сданных решений.
 
-Usage:
-    python plagreport.py -f /path/to/your/folder
-                          [-r report_name]
-                          [-p minimum_percentage]
-                          [-s minimum_size]
-                          [-t file_types]
+Использование:
+    python plagreport.py archive_name
+                            [-y указать параметр если архив выгружен из Яндекс контест]
+                            [-r имя файла с отчетом]
+                            [-p минимальный процент совпадения для включения в отчет]
+                            [-s минимальная длина проверяемого решения]
+Аргументы:
+    -y, --yandex : Указать аргумент если архив выгружен из Яндекс контест
+    -r, --report    : Имя файла с отчетом, по умолчанию:  reports/report_[current_datetime].csv
+    -p, --min-percent : Минимальный процент совпадения дл включения в отчет, по умолчанию: 90%
+    -s, --min-size   : Минимальная длина проверяемого ответа, по умолчанию: 140 символо
 
-Arguments:
-    -r, --report    : Name of the report file. Default: report_[current_datetime].csv
-    -p, --min-percent : Minimum overlap percentage for reporting. Default: 60
-    -s, --min-size   : Minimum text length for analysis. Default: 140
-
-Example:
-    python plagreport.py -f /path/to/your/folder -r custom_report.csv -p 70  -t txt,py
+Пример:
+    python plagreport.py  submissions.zip -y  -p 70
 """
 
 import argparse
-import os
-import re
-import pandas as pd
-from itertools import combinations
-from zlib import compress
-from tqdm import tqdm
 import logging
+import mimetypes
+import os
+import pandas as pd
+import re
 import tempfile
 import zipfile
-import time
+
+from zlib import compress
+from tqdm import tqdm
 from datetime import datetime
-import concurrent.futures
 
 
-MIN_PERCENTAGE = 80
+MIN_PERCENTAGE = 90
 REPORT_NAME = 'report'
 DEFAULT_MIN_SIZE = 140
 YANDEX_FORMAT = False
@@ -47,6 +46,14 @@ logging.basicConfig(
 compressed_text_cache = {}
 
 
+def is_text_file(filepath):
+    mime_type, _ = mimetypes.guess_type(filepath)
+    result = mime_type is None or mime_type.startswith('text')
+    # if not result:
+    #     logging.info(mime_type)
+    return result
+
+
 def get_overlap_percentage(text1, text2):
     if text1 not in compressed_text_cache:
         compressed_text_cache[text1] = len(compress(text1.encode('utf-8')))
@@ -57,17 +64,6 @@ def get_overlap_percentage(text1, text2):
     compressed_individual = (compressed_text_cache[text1] +
                              compressed_text_cache[text2])
 
-    overlap_percentage = (
-        (compressed_individual - len(compressed_both)) /
-        compressed_individual * 2 * 100
-    )
-    return overlap_percentage
-
-
-def get_overlap_percentage_v1(text1, text2):
-    compressed_both = compress((text1 + text2).encode('utf-8'))
-    compressed_individual = (len(compress(text1.encode('utf-8'))) +
-                             len(compress(text2.encode('utf-8'))))
     overlap_percentage = (
         (compressed_individual - len(compressed_both)) /
         compressed_individual * 2 * 100
@@ -91,6 +87,9 @@ def get_submissions(archive_path, min_size):
                 file_path = os.path.join(root, file)
                 file_size = os.path.getsize(file_path)
                 relative_path = os.path.relpath(file_path, temp_dir)
+                if not is_text_file(file_path):
+                    logging.warning(f"{file_path} — не текстовый файл")
+                    continue
                 if file_size >= min_size:
                     file_list.append((relative_path, file_size))
 
@@ -145,64 +144,37 @@ def check_plagiarism(submissions, min_percentage, report_filename):
     """
     Проверяет все посылки в списке submissions на списывание и создает список для отчета.
     """
-
     # submissions_df.to_csv('all_submissions.csv', index=False)
     report = []
-
 
     if YANDEX_FORMAT:
         submissions_df = pd.DataFrame(submissions)
         task_count = submissions_df['task_id'].nunique()
         logging.info('Анализируем данные в формате Яндекс Контест')
         logging.info(f'Количество анализируемых задач: {task_count}')
-
-        def process_pair(task_list, i, j):
-            if task_list[i]['user_id'] != task_list[j]['user_id']:
-                overlap_percentage = get_overlap_percentage(
-                    task_list[i]['submission_text'],
-                    task_list[j]['submission_text']
-                )
-                if overlap_percentage > min_percentage:
-                    return {
-                        'task_id': task_list[i]['task_id'],
-                        'user_id_1': task_list[i]['user_id'],
-                        'user_id_2': task_list[j]['user_id'],
-                        'filename_1': task_list[i]['filename'],
-                        'filename_2': task_list[j]['filename'],
-                        'overlap_percentage': overlap_percentage
-                    }
-            return None
-
+        logging.info(f'Количество анализируемых посылок: {len(submissions_df)}')
         for task_id in submissions_df['task_id'].unique():
             task_df = submissions_df[submissions_df['task_id'] == task_id]
+
             task_list = task_df.to_dict(orient='records')
-
-            pairs = [(task_list, i, j) for i in range(len(task_list)) for j in range(i + 1, len(task_list))]
-
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                results = list(tqdm(executor.map(lambda p: process_pair(*p), pairs),
-                                    desc=f"Задача {task_id}. Обработка файлов",
-                                    leave=True))
-                report.extend([result for result in results if result])
-            
-            # for i in tqdm(range(len(task_list)),
-            #               desc=f"Задача {task_id}. Обработка файлов",
-            #               leave=True):
-            #     for j in range(i+1, len(task_list)):
-            #         if task_list[i]['user_id'] != task_list[j]['user_id']:
-            #             overlap_percentage = get_overlap_percentage(
-            #                 task_list[i]['submission_text'],
-            #                 task_list[j]['submission_text']
-            #             )
-            #             if overlap_percentage > min_percentage:
-            #                 report.append({
-            #                     'task_id': task_list[i]['task_id'],
-            #                     'user_id_1': task_list[i]['user_id'],
-            #                     'user_id_2': task_list[j]['user_id'],
-            #                     'filename_1': task_list[i]['filename'],
-            #                     'filename_2': task_list[j]['filename'],
-            #                     'overlap_percentage': overlap_percentage
-            #                 })
+            for i in tqdm(range(len(task_list)),
+                          desc=f"Задача {task_id}. Обработка файлов",
+                          leave=True):
+                for j in range(i+1, len(task_list)):
+                    if task_list[i]['user_id'] != task_list[j]['user_id']:
+                        overlap_percentage = get_overlap_percentage(
+                            task_list[i]['submission_text'],
+                            task_list[j]['submission_text']
+                        )
+                        if overlap_percentage > min_percentage:
+                            report.append({
+                                'task_id': task_list[i]['task_id'],
+                                'user_id_1': task_list[i]['user_id'],
+                                'user_id_2': task_list[j]['user_id'],
+                                'filename_1': task_list[i]['filename'],
+                                'filename_2': task_list[j]['filename'],
+                                'overlap_percentage': overlap_percentage
+                            })
 
     else:
         logging.info('Данные не в формате архива решений Яндекс контест')
