@@ -129,6 +129,10 @@ def get_submissions(archive_path, min_size):
 
 
 def create_report(report_filename, report_data):
+    """
+    Сохраняет отчет о проверке в csv файл.
+    По умолчанию файл сохраняется в папку reports в текущей директории.
+    """
     if report_filename is None:
         folder_path = os.path.join(os.getcwd(), 'reports')
         os.makedirs(folder_path, exist_ok=True)
@@ -171,14 +175,17 @@ def check_plagiarism(submissions, min_percentage, report_filename):
                                 'task_id': task_list[i]['task_id'],
                                 'user_id_1': task_list[i]['user_id'],
                                 'user_id_2': task_list[j]['user_id'],
-                                'filename_1': task_list[i]['filename'],
-                                'filename_2': task_list[j]['filename'],
+                                'submission_id_1': task_list[i]['submission_id'],
+                                'submission_id_2': task_list[j]['submission_id'],
                                 'overlap_percentage': overlap_percentage
                             })
 
     else:
         logging.info('Данные не в формате архива решений Яндекс контест')
-        for i in range(len(submissions)):
+        for i in tqdm(range(len(submissions)),
+                          desc=f"Обработка файлов",
+                          leave=True):
+        # for i in range(len(submissions)):
             for j in range(i + 1, len(submissions)):
                 submission1 = submissions[i]['submission_text']
                 submission2 = submissions[j]['submission_text']
