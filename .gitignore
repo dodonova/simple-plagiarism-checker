@@ -161,7 +161,6 @@ cython_debug/
 
 
 # Processing data files
-*.zip
 reports/
 archives/
 all_submissions.csv

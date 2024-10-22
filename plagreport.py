@@ -101,7 +101,7 @@ def get_submissions(archive_path, min_size):
                             submission_id = match.group(3)
                         else:
                             logging.error((f'Имя файла  не соответствует правилу именования архива решений из Яндекс Контест: {file_path}'))
-                            continue
+                            return None
 
                     try:
                         with open(file_path, 'r', encoding='utf-8') as f:
@@ -185,7 +185,6 @@ def check_plagiarism(submissions, min_percentage, report_filename):
         for i in tqdm(range(len(submissions)),
                           desc=f"Обработка файлов",
                           leave=True):
-        # for i in range(len(submissions)):
             for j in range(i + 1, len(submissions)):
                 submission1 = submissions[i]['submission_text']
                 submission2 = submissions[j]['submission_text']
@@ -204,8 +203,12 @@ def check_plagiarism(submissions, min_percentage, report_filename):
 
 def main(archive_filename, min_size, min_percentage, report_filename):
     submissions = get_submissions(archive_filename, min_size)
-    report = check_plagiarism(submissions, min_percentage, report_filename)
-    print(f"Был создан отчет: {report}")
+    if submissions:
+        report = check_plagiarism(submissions, min_percentage, report_filename)
+        print(f"Был создан отчет: {report}")
+        logging.info('Отчет успешно создан')
+    else:
+        logging.warning('Отчет не был создан')
 
 
 if __name__ == "__main__":
@@ -240,4 +243,4 @@ if __name__ == "__main__":
 
     main(args.archive, args.min_size, args.min_percent, args.report_name)
 
-    logging.info('Отчет успешно создан')
+    

@@ -1,0 +1,9 @@
+filename_1,filename_2,overlap_percentage
+example_data/S008.py,example_data/S022.py,70.27027027027027
+example_data/S008.py,example_data/S025.py,60.94420600858369
+example_data/S008.py,example_data/S019.py,64.1891891891892
+example_data/S027.py,example_data/S026.py,96.21212121212122
+example_data/S027.py,example_data/S001.txt,96.21212121212122
+example_data/S026.py,example_data/S001.txt,96.21212121212122
+example_data/S022.py,example_data/S025.py,62.18487394957983
+example_data/S022.py,example_data/S019.py,66.44518272425249
