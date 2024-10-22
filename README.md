@@ -63,7 +63,10 @@ python3 plagreport.py -f /путь/к/вашей/папке
 Пример:
     Проверить решения из архива `example_data_no_yc.zip` в произвольном, минимальный процент совпадения - 60%.
     Сохранить отчет в файл `report_example_data_no_yc.csv`
-    `python3 plagreport.py example_data_no_yc.zip -p 60 -r report_example_data_no_yc.csv`
+
+     `python3 plagreport.py example_data_no_yc.zip -p 60 -r report_example_data_no_yc.csv`
+    
     Проверить решения из архива `example_data_yandex_contest.zip` в формате Яндекс Контест, минимальный процент совпадения - 70%
     Сохранить отчет в файл `report_example_data_yandex_contest.csv`
-    `python3 plagreport.py example_data_yandex_contest.zip -y -p 70 -r report_example_data_yandex_contest.csv`
+    
+     `python3 plagreport.py example_data_yandex_contest.zip -y -p 70 -r report_example_data_yandex_contest.csv`
