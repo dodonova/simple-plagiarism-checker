@@ -41,6 +41,11 @@ python3 -m venv env
 python3 -m pip install --upgrade pip
 ```
 
+Установить все требуемые библиотеки:
+```
+pip install -r requirements.txt
+```
+
 Запустить проект:
 ```
 python3 plagreport.py -f /путь/к/вашей/папке
