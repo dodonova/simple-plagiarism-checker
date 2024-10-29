@@ -35,7 +35,7 @@ from datetime import datetime
 
 MIN_PERCENTAGE = 90
 REPORT_NAME = 'report'
-DEFAULT_MIN_SIZE = 140
+DEFAULT_MIN_SIZE = 256
 YANDEX_FORMAT = False
 
 logging.basicConfig(
@@ -94,12 +94,17 @@ def get_submissions(archive_path, min_size):
                     file_list.append((relative_path, file_size))
 
                     if YANDEX_FORMAT:
-                        match = re.search(r'.+\/(.+)\/(\w+)-(\d+)-', file_path)
-                        if match:
-                            user_id = match.group(1)
-                            task_id = match.group(2)
-                            submission_id = match.group(3)
-                        else:
+                        # logging.info(file_path)
+                        # input()
+                        user, submission = file_path.split('/')[-2:] 
+                        user_login = user[:-10]
+                        user_id = user[-9:]
+                        task_id, submission_id = submission.split("-")[:2]
+
+                        print(file_path, task_id, user_id, submission_id)
+                        input()
+
+                        if not(submission_id.isdigit() and user_id.isdigit()):
                             logging.error((f'Имя файла  не соответствует правилу именования архива решений из Яндекс Контест: {file_path}'))
                             return None
 
@@ -114,6 +119,7 @@ def get_submissions(archive_path, min_size):
                     if YANDEX_FORMAT:
                         submissions.append({
                             'filename': relative_path,
+                            'user_login': user_login,
                             'user_id': user_id,
                             'task_id': task_id,
                             'submission_id': submission_id,
@@ -173,6 +179,8 @@ def check_plagiarism(submissions, min_percentage, report_filename):
                         if overlap_percentage > min_percentage:
                             report.append({
                                 'task_id': task_list[i]['task_id'],
+                                'user_login_1': task_list[i]['user_login'],
+                                'user_login_2': task_list[j]['user_login'],
                                 'user_id_1': task_list[i]['user_id'],
                                 'user_id_2': task_list[j]['user_id'],
                                 'submission_id_1': task_list[i]['submission_id'],

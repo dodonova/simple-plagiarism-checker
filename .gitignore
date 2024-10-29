@@ -163,6 +163,4 @@ cython_debug/
 # Processing data files
 reports/
 archives/
-inf/
-data/
 all_submissions.csv
