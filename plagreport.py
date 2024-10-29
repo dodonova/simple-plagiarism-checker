@@ -94,15 +94,10 @@ def get_submissions(archive_path, min_size):
                     file_list.append((relative_path, file_size))
 
                     if YANDEX_FORMAT:
-                        # logging.info(file_path)
-                        # input()
                         user, submission = file_path.split('/')[-2:] 
                         user_login = user[:-10]
                         user_id = user[-9:]
                         task_id, submission_id = submission.split("-")[:2]
-
-                        print(file_path, task_id, user_id, submission_id)
-                        input()
 
                         if not(submission_id.isdigit() and user_id.isdigit()):
                             logging.error((f'Имя файла  не соответствует правилу именования архива решений из Яндекс Контест: {file_path}'))
