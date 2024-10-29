@@ -5,11 +5,11 @@ import re
 # csv_files = glob.glob('*.csv')
 
 FILE_LIST = [
-    'reports/inf-w2-A.csv',
-    'reports/inf-w2-B.csv',
-    'reports/inf-w2-C.csv',
-    'reports/inf-w2-D.csv',
-    'reports/inf-w2-E.csv',
+    '../reports/inf-w2-A.csv',
+    '../reports/inf-w2-B.csv',
+    '../reports/inf-w2-C.csv',
+    '../reports/inf-w2-D.csv',
+    '../reports/inf-w2-E.csv',
 ]
 
 csv_files = FILE_LIST

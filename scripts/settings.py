@@ -5,6 +5,7 @@ WAVE4_ID = 63457
 
 SUBMISSIONS_URL = 'https://admin.contest.yandex.ru/submissions/'
 
-WAVE1_DATA = 'data/inf-w1-ALL.csv'
-WAVE2_DATA = 'data/inf-w2-ALL.csv'
+WAVE1_DATA = '../data/inf-w1-ALL.csv'
+WAVE2_DATA = '../data/inf-w2-ALL.csv'
+
 PARTICIPANTS_DATA = 'data/participants.csv'

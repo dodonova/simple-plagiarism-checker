@@ -99,7 +99,7 @@ def get_submissions(archive_path, min_size):
                         user_id = user[-9:]
                         task_id, submission_id = submission.split("-")[:2]
 
-                        if not(submission_id.isdigit() and user_id.isdigit()):
+                        if not (submission_id.isdigit() and user_id.isdigit()):
                             logging.error((f'Имя файла  не соответствует правилу именования архива решений из Яндекс Контест: {file_path}'))
                             return None
 
