@@ -162,5 +162,5 @@ cython_debug/
 
 # Processing data files
 reports/
-archives/
-all_submissions.csv
+tmp/
+data/
