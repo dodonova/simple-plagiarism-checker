@@ -164,4 +164,3 @@ cython_debug/
 reports/
 tmp/
 data/
-all_submissions.csv

@@ -149,7 +149,7 @@ def check_plagiarism(submissions, min_percentage, report_filename):
     """
     Проверяет все посылки в списке submissions на списывание и создает список для отчета.
     """
-    # submissions_df.to_csv('all_submissions.csv', index=False)
+    # submissions_df.to_csv('tmp/all_submissions.csv', index=False)
     report = []
 
     if YANDEX_FORMAT:
