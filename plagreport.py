@@ -94,7 +94,7 @@ def get_submissions(archive_path, min_size):
                     file_list.append((relative_path, file_size))
 
                     if YANDEX_FORMAT:
-                        user, submission = file_path.split('/')[-2:] 
+                        user, submission = file_path.split(os.sep)[-2:]
                         user_login = user[:-10]
                         user_id = user[-9:]
                         task_id, submission_id = submission.split("-")[:2]
